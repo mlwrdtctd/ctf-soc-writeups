@@ -26,11 +26,24 @@ The goal of this portfolio is to demonstrate practical SOC Analyst skills, inclu
 ---
 
 ## 🛠️ Tools & Technologies Used
-*   **SIEM:** Splunk (SPL queries for event correlation and pivoting).
-*   **Logging:** Sysmon (Event IDs 1, 3, 11, 13, 22), Windows Security Event Logs (Event IDs 4697, 4624).
-*   **Threat Intelligence:** VirusTotal (IP reputation check).
+
+### Defensive Tools (Analyst Side)
+*   **SIEM:** Splunk (SPL queries for event correlation, pivoting, and hunting).
+*   **Logging & Telemetry:** Sysmon (Process Create, FileCreate, NetworkConnect, RegistrySet), Windows Security Event Logs (Service Creation, Logon Events), PowerShell Script Block Logging (Event ID 4104).
+*   **Threat Intelligence:** VirusTotal (IP/Domain reputation check).
 *   **Frameworks:** MITRE ATT&CK.
-*   **Analysis:** Base64 decoding, PowerShell Script Block Logging (Event ID 4104).
+
+### Analysis & Investigation Skills
+*   **Execution Analysis:** Base64 decoding, deobfuscation of malicious command lines.
+*   **Defense Evasion Detection:** Identifying "Compile After Delivery" (analyzing `csc.exe` and `cvtres.exe`), Living off the Land (LotL) binaries.
+*   **Persistence Analysis:** Investigating Windows Services (`SvcUpdate`) and Registry Run Keys (`HKU\...\Run\`).
+*   **Lateral Movement Tracking:** Tracing PowerShell Remoting (`New-PSSession`) via Process IDs and Logon IDs.
+
+### Offensive Tools (Adversary Side - Observed in Logs)
+*   **Execution:** PowerShell (`powershell.exe`), `cmd.exe`, `WINWORD.EXE`.
+*   **Defense Evasion:** `csc.exe` (C# Compiler), `cvtres.exe` (Resource Compiler).
+*   **C2 / Exfiltration:** Custom C2 servers (`45.147.230.131`, `104.18.32.47`), `7z.exe` (Archiving), `curl.exe` (Uploading), `Invoke-RestMethod`.
+*   **Discovery:** `net.exe`, `net1.exe`, `VaultCmd.exe` (Credential Access).
 
 ---
 
