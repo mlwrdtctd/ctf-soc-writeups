@@ -1,4 +1,4 @@
-# 🚨 Incident Report: Quiet as the Grave (Data Exfiltration & Defense Evasion)
+# 🚨 Incident Report: Quiet as the Grave (Compile After Delivery & Data Exfiltration)
 
 **Analyst:** mlwrdtctd  
 **Date of Activity:** September 10, 2026  
@@ -37,7 +37,7 @@ On September 10, 2026, a targeted cyberattack was detected on a development work
 
 ### Step 2: Execution of Malicious Script
 *   **Timestamp:** `2026-09-10 12:29:49`
-*   **Description:** `review-helper.ps1` executed a command that created a C# source code file (`nx3yvfmc.cmdline`) containing the payload and an empty DLL library file (`nx3yvfmc.dll`).
+*   **Description:** `review-helper.ps1` executed a command that created a C# source code file (`nx3yvfmc.cmdline`) containing the payload and an empty DLL library file (`nx3yvfmc.dll`) - ProcessID 12412.
 *   **Tactic:** Execution
 *   **Technique:** Command and Scripting Interpreter: PowerShell (T1059.001)
 *   **User:** `s.reyes`
@@ -55,7 +55,6 @@ On September 10, 2026, a targeted cyberattack was detected on a development work
 *   **Asset:** `THM-SREYES`
 *   **IOCs:** `csc.exe`, `cvtres.exe`, `nx3yvfmc.dll`
 
-*(Встав сюди скріншот виконання csc.exe або cvtres.exe)*
 
 ### Step 4: C2 Server Contact
 *   **Timestamp:** `2026-09-10 12:29:49 - 12:39:49`
