@@ -19,6 +19,10 @@ The goal of this portfolio is to demonstrate practical SOC Analyst skills, inclu
 *   **Key Skills:** Base64 decoding, C2 traffic analysis, Windows Service Persistence, Scheduled Task analysis, Data Exfiltration (Game source code & Crash logs).
 *   **Key Techniques:** T1566.001, T1059.001, T1543.003, T1053.005, T1041.
 
+### 2. [Quiet as the Grave: Compile After Delivery & Data Exfiltration](https://github.com/mlwrdtctd/ctf-soc-writeups/blob/main/02_Incident_Response_Reports/THM_QuietAstheGrave_CompileAfterDelivery%26_DataExfiltration.md)
+*   **Scenario:** Defense Evasion via on-the-fly C# compilation, Registry Persistence, Lateral Movement, and Data Exfiltration.
+*   **Key Skills:** Analyzing `csc.exe` compilation, Living off the Land (LotL) using `curl.exe`, PowerShell Remoting (`New-PSSession`), Data Staging (`Compress-Archive`), Registry Run Key analysis.
+*   **Key Techniques:** T1059.001, T1027.004, T1547.001, T1021.006, T1560.001, T1041.
 ---
 
 ## 🛠️ Tools & Technologies Used
